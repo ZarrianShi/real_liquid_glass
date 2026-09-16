@@ -62,15 +62,25 @@ final class NativeTabBarViewFactory: NSObject, FlutterPlatformViewFactory {
 
 /// A complete system UITabBar. On iOS 26+ UIKit supplies the Liquid Glass
 /// surface, selection lens, touch response, and morphing transition.
+private final class NativeLiquidGlassTabBar: UITabBar {
+  var onLayout: (() -> Void)?
+
+  override func layoutSubviews() {
+    super.layoutSubviews()
+    onLayout?()
+  }
+}
+
 final class NativeTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelegate {
   private let container: UIView
-  private let tabBar: UITabBar
+  private let tabBar: NativeLiquidGlassTabBar
   private let channel: FlutterMethodChannel
   private var labels: [String] = []
   private var symbols: [String] = []
   private var selectedSymbols: [String] = []
   private var showsLabels = true
   private var showsIcons = true
+  private var appliedTextOnlyTitleOffset: CGFloat?
 
   init(
     frame: CGRect,
@@ -79,13 +89,14 @@ final class NativeTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDel
     messenger: FlutterBinaryMessenger
   ) {
     container = UIView(frame: frame)
-    tabBar = UITabBar(frame: .zero)
+    tabBar = NativeLiquidGlassTabBar(frame: .zero)
     channel = FlutterMethodChannel(
       name: "real_liquid_glass/tab_bar_\(viewId)",
       binaryMessenger: messenger)
     super.init()
 
     container.backgroundColor = .clear
+    tabBar.onLayout = { [weak self] in self?.updateTextOnlyTitlePosition() }
     tabBar.translatesAutoresizingMaskIntoConstraints = false
     tabBar.delegate = self
     container.addSubview(tabBar)
@@ -139,7 +150,10 @@ final class NativeTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDel
           image: image,
           selectedImage: selectedImage)
       }
+      appliedTextOnlyTitleOffset = nil
     }
+
+    updateTextOnlyTitlePosition()
 
     if let tint = args["tint"] as? NSNumber {
       tabBar.tintColor = GlassHostView.color(argb: tint.int64Value)
@@ -151,6 +165,28 @@ final class NativeTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDel
     if let items = tabBar.items, items.indices.contains(index), tabBar.selectedItem !== items[index] {
       tabBar.selectedItem = items[index]
     }
+  }
+
+  private func updateTextOnlyTitlePosition() {
+    let offset: CGFloat
+    if showsIcons {
+      offset = 0
+    } else {
+      let height = tabBar.bounds.height
+      guard height > 0 else { return }
+      // UIKit keeps the title baseline near the bottom when a tab bar is
+      // taller than its standard 49pt content height. Move it by half of the
+      // extra space so a text-only title stays optically centered in the lens.
+      offset = 3 - (height - 49) / 2
+    }
+    if let appliedTextOnlyTitleOffset,
+       abs(appliedTextOnlyTitleOffset - offset) < 0.01 {
+      return
+    }
+    tabBar.items?.forEach {
+      $0.titlePositionAdjustment = UIOffset(horizontal: 0, vertical: offset)
+    }
+    appliedTextOnlyTitleOffset = offset
   }
 
   private func symbol(
