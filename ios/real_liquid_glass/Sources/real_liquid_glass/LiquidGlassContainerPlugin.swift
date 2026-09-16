@@ -80,6 +80,7 @@ final class NativeTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDel
   private var selectedSymbols: [String] = []
   private var showsLabels = true
   private var showsIcons = true
+  private var appliedTextOnlyTitleOffset: CGFloat?
   private var appliedTextOnlyBaselineOffset: CGFloat?
 
   init(
@@ -150,6 +151,7 @@ final class NativeTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDel
           image: image,
           selectedImage: selectedImage)
       }
+      appliedTextOnlyTitleOffset = nil
       appliedTextOnlyBaselineOffset = nil
     }
 
@@ -168,32 +170,36 @@ final class NativeTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDel
   }
 
   private func updateTextOnlyTitlePosition() {
+    let titleOffset: CGFloat
     let baselineOffset: CGFloat
     if showsIcons {
+      titleOffset = 0
       baselineOffset = 0
     } else {
       let height = tabBar.bounds.height
       guard height > 0 else { return }
 
-      // A title-only UITabBar is naturally centered at its standard 49pt
-      // content height. UIKit keeps that content anchor for shorter bars,
-      // which would clip the glyphs toward the bottom. Raise only the part
-      // that falls outside the shorter bar, then apply a small optical nudge
-      // that keeps Chinese and Latin glyphs visually centered at every height.
-      let shortBarCorrection = max(0, (49 - height) / 2)
-      baselineOffset = shortBarCorrection - 1.5
+      // UIKit's title-only layout keeps its title near the bottom at the
+      // standard 49pt content height. Move it by half of the difference from
+      // the actual bar height so the glyph box stays centered in taller and
+      // shorter bars. The baseline nudge is intentionally height-independent:
+      // it corrects the small optical lift of mixed Chinese/Latin glyphs
+      // without changing the centering model for any supported height.
+      titleOffset = 3 - (height - 49) / 2
+      baselineOffset = -1
     }
-    if let appliedTextOnlyBaselineOffset,
+    if let appliedTextOnlyTitleOffset,
+       let appliedTextOnlyBaselineOffset,
+       abs(appliedTextOnlyTitleOffset - titleOffset) < 0.01,
        abs(appliedTextOnlyBaselineOffset - baselineOffset) < 0.01 {
       return
     }
 
-    // iOS 26's Liquid Glass tab-bar provider normalizes
-    // titlePositionAdjustment during layout. Keep that value neutral and
-    // move only the title glyph baseline; this leaves the glass lens and hit
-    // target untouched. The baseline attribute is supported on iOS 13+.
+    // The title adjustment moves UIKit's content layout, while the baseline
+    // attribute provides the final optical nudge without moving the glass
+    // lens or changing the tab button's hit target.
     tabBar.items?.forEach {
-      $0.titlePositionAdjustment = .zero
+      $0.titlePositionAdjustment = UIOffset(horizontal: 0, vertical: titleOffset)
     }
     if #available(iOS 13.0, *) {
       let appearance = tabBar.standardAppearance ?? UITabBarAppearance()
@@ -203,6 +209,14 @@ final class NativeTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDel
         appearance.compactInlineLayoutAppearance,
       ]
       for itemAppearance in itemAppearances {
+        itemAppearance.normal.titlePositionAdjustment =
+          UIOffset(horizontal: 0, vertical: titleOffset)
+        itemAppearance.selected.titlePositionAdjustment =
+          UIOffset(horizontal: 0, vertical: titleOffset)
+        itemAppearance.disabled.titlePositionAdjustment =
+          UIOffset(horizontal: 0, vertical: titleOffset)
+        itemAppearance.focused.titlePositionAdjustment =
+          UIOffset(horizontal: 0, vertical: titleOffset)
         for state in [
           itemAppearance.normal,
           itemAppearance.selected,
@@ -219,6 +233,7 @@ final class NativeTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDel
         tabBar.scrollEdgeAppearance = appearance
       }
     }
+    appliedTextOnlyTitleOffset = titleOffset
     appliedTextOnlyBaselineOffset = baselineOffset
     tabBar.setNeedsLayout()
   }
