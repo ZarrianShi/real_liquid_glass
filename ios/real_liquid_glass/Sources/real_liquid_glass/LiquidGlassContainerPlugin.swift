@@ -194,13 +194,6 @@ final class NativeTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDel
     // target untouched. The baseline attribute is supported on iOS 13+.
     tabBar.items?.forEach {
       $0.titlePositionAdjustment = .zero
-      let attributes: [NSAttributedString.Key: Any] = [
-        .baselineOffset: NSNumber(value: Double(baselineOffset)),
-      ]
-      $0.setTitleTextAttributes(attributes, for: .normal)
-      $0.setTitleTextAttributes(attributes, for: .selected)
-      $0.setTitleTextAttributes(attributes, for: .disabled)
-      $0.setTitleTextAttributes(attributes, for: .focused)
     }
     if #available(iOS 13.0, *) {
       let appearance = tabBar.standardAppearance ?? UITabBarAppearance()
