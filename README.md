@@ -98,8 +98,20 @@ Place it above your content (e.g. bottom-aligned in a `Stack`) so the glass
 has something to refract. On iOS this widget is a complete native `UITabBar`,
 not a Flutter recreation: iOS owns the Liquid Glass surface, selection lens,
 touch response, accessibility, and system morphing animation. `sfSymbol` and
-`selectedSfSymbol` configure its native icons. Other platforms keep the
-Flutter-rendered fallback behind the same API.
+`selectedSfSymbol` configure its native icons. Set `showIcons: false` for a
+native text-only tab bar:
+
+```dart
+LiquidGlassBottomBar(
+  items: items,
+  currentIndex: index,
+  onTap: onTap,
+  showIcons: false,
+  height: 48,
+)
+```
+
+Other platforms keep the Flutter-rendered fallback behind the same API.
 
 ### `LiquidGlass.capabilities()`
 

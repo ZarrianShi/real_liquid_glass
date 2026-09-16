@@ -76,8 +76,10 @@ class LiquidGlassBottomBar extends StatefulWidget {
     this.height = 85,
     this.margin = EdgeInsets.zero,
     this.showLabels = true,
+    this.showIcons = true,
     this.fallbackIntensity = 1.0,
-  }) : assert(items.length >= 2, 'Provide at least two destinations');
+  }) : assert(items.length >= 2, 'Provide at least two destinations'),
+       assert(showLabels || showIcons, 'Show labels, icons, or both');
 
   /// The destinations to display, in order.
   final List<LiquidGlassBarItem> items;
@@ -104,6 +106,9 @@ class LiquidGlassBottomBar extends StatefulWidget {
 
   /// Whether to show labels under the icons.
   final bool showLabels;
+
+  /// Whether to show icons. Set this to false for a text-only tab bar.
+  final bool showIcons;
 
   /// Fallback-effect strength on non-Apple platforms; see
   /// [LiquidGlassContainer.fallbackIntensity].
@@ -179,6 +184,8 @@ class _LiquidGlassBottomBarState extends State<LiquidGlassBottomBar> {
             currentIndex: widget.currentIndex,
             onTap: _select,
             tint: widget.tint ?? CupertinoTheme.of(context).primaryColor,
+            showLabels: widget.showLabels,
+            showIcons: widget.showIcons,
           ),
         ),
       );
@@ -277,6 +284,7 @@ class _LiquidGlassBottomBarState extends State<LiquidGlassBottomBar> {
                           selectedColor: selectedColor,
                           unselectedColor: unselectedColor,
                           showLabel: widget.showLabels,
+                          showIcon: widget.showIcons,
                         ),
                       ),
                   ],
@@ -296,12 +304,16 @@ class _NativeLiquidGlassTabBar extends StatefulWidget {
     required this.currentIndex,
     required this.onTap,
     required this.tint,
+    required this.showLabels,
+    required this.showIcons,
   });
 
   final List<LiquidGlassBarItem> items;
   final int currentIndex;
   final ValueChanged<int> onTap;
   final Color tint;
+  final bool showLabels;
+  final bool showIcons;
 
   @override
   State<_NativeLiquidGlassTabBar> createState() =>
@@ -318,6 +330,8 @@ class _NativeLiquidGlassTabBarState extends State<_NativeLiquidGlassTabBar> {
         .map((item) => item.selectedSfSymbol ?? item.sfSymbol)
         .toList(),
     'currentIndex': widget.currentIndex,
+    'showLabels': widget.showLabels,
+    'showIcons': widget.showIcons,
     'tint': widget.tint.toARGB32(),
     'dark': CupertinoTheme.of(context).brightness == Brightness.dark,
   };
@@ -359,6 +373,7 @@ class _BarItem extends StatelessWidget {
     required this.selectedColor,
     required this.unselectedColor,
     required this.showLabel,
+    required this.showIcon,
   });
 
   final LiquidGlassBarItem item;
@@ -366,6 +381,7 @@ class _BarItem extends StatelessWidget {
   final Color selectedColor;
   final Color unselectedColor;
   final bool showLabel;
+  final bool showIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -380,24 +396,25 @@ class _BarItem extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           // Pop the icon when the capsule arrives on it.
-          AnimatedScale(
-            scale: selected ? 1.08 : 1.0,
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeOutBack,
-            child: Icon(
-              selected ? (item.selectedIcon ?? item.icon) : item.icon,
-              size: 24,
-              color: color,
+          if (showIcon)
+            AnimatedScale(
+              scale: selected ? 1.08 : 1.0,
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutBack,
+              child: Icon(
+                selected ? (item.selectedIcon ?? item.icon) : item.icon,
+                size: 24,
+                color: color,
+              ),
             ),
-          ),
           if (showLabel) ...[
-            const SizedBox(height: 2),
+            if (showIcon) const SizedBox(height: 2),
             Text(
               item.label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: showIcon ? 11 : 15,
                 height: 1.2,
                 fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                 color: color,

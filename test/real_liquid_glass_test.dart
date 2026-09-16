@@ -202,6 +202,34 @@ void main() {
       expect(find.text('Home'), findsNothing);
     });
 
+    testWidgets('supports a text-only fallback bar', (tester) async {
+      await tester.pumpWidget(
+        host(
+          LiquidGlassBottomBar(
+            items: items,
+            currentIndex: 0,
+            onTap: (_) {},
+            showIcons: false,
+          ),
+        ),
+      );
+      expect(find.byType(Icon), findsNothing);
+      expect(find.text('Home'), findsOneWidget);
+    });
+
+    test('requires labels or icons to remain visible', () {
+      expect(
+        () => LiquidGlassBottomBar(
+          items: items,
+          currentIndex: 0,
+          onTap: (_) {},
+          showLabels: false,
+          showIcons: false,
+        ),
+        throwsAssertionError,
+      );
+    });
+
     testWidgets('uses a complete native UITabBar on iOS', (tester) async {
       debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
       await tester.pumpWidget(
@@ -210,6 +238,27 @@ void main() {
         ),
       );
       expect(find.byType(UiKitView), findsOneWidget);
+      debugDefaultTargetPlatformOverride = null;
+    });
+
+    testWidgets('passes text-only configuration to native UITabBar', (
+      tester,
+    ) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      await tester.pumpWidget(
+        host(
+          LiquidGlassBottomBar(
+            items: items,
+            currentIndex: 0,
+            onTap: (_) {},
+            showIcons: false,
+          ),
+        ),
+      );
+      final view = tester.widget<UiKitView>(find.byType(UiKitView));
+      final params = view.creationParams! as Map<String, Object>;
+      expect(params['showIcons'], isFalse);
+      expect(params['showLabels'], isTrue);
       debugDefaultTargetPlatformOverride = null;
     });
   });

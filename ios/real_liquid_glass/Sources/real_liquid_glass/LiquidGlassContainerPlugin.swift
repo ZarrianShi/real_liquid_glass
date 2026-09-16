@@ -69,6 +69,8 @@ final class NativeTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDel
   private var labels: [String] = []
   private var symbols: [String] = []
   private var selectedSymbols: [String] = []
+  private var showsLabels = true
+  private var showsIcons = true
 
   init(
     frame: CGRect,
@@ -113,19 +115,29 @@ final class NativeTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDel
     let nextLabels = args["labels"] as? [String] ?? labels
     let nextSymbols = args["symbols"] as? [String] ?? symbols
     let nextSelectedSymbols = args["selectedSymbols"] as? [String] ?? selectedSymbols
+    let nextShowsLabels = args["showLabels"] as? Bool ?? showsLabels
+    let nextShowsIcons = args["showIcons"] as? Bool ?? showsIcons
     let itemsChanged = nextLabels != labels || nextSymbols != symbols
-      || nextSelectedSymbols != selectedSymbols
+      || nextSelectedSymbols != selectedSymbols || nextShowsLabels != showsLabels
+      || nextShowsIcons != showsIcons
     labels = nextLabels
     symbols = nextSymbols
     selectedSymbols = nextSelectedSymbols
+    showsLabels = nextShowsLabels
+    showsIcons = nextShowsIcons
 
     if itemsChanged || tabBar.items == nil {
       tabBar.items = labels.indices.map { index in
-        let image = UIImage(systemName: symbol(at: index, in: symbols))
-        let selectedImage = UIImage(
-          systemName: symbol(at: index, in: selectedSymbols, fallback: symbols))
+        let image = showsIcons
+          ? UIImage(systemName: symbol(at: index, in: symbols))
+          : nil
+        let selectedImage = showsIcons
+          ? UIImage(systemName: symbol(at: index, in: selectedSymbols, fallback: symbols))
+          : nil
         return UITabBarItem(
-          title: labels[index], image: image, selectedImage: selectedImage)
+          title: showsLabels ? labels[index] : nil,
+          image: image,
+          selectedImage: selectedImage)
       }
     }
 

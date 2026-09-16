@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Added `LiquidGlassBottomBar.showIcons`. Set it to `false` for a text-only
+  native `UITabBar` while preserving the system Liquid Glass selection lens and
+  morph animation.
+- `showLabels` now also applies to the native iOS tab bar.
+
 ## 0.3.0
 
 - `LiquidGlassBottomBar` now embeds a complete native `UITabBar` on iOS, so
