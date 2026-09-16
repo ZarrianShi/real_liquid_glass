@@ -202,6 +202,20 @@ final class NativeTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDel
           UIOffset(horizontal: 0, vertical: offset)
         itemAppearance.focused.titlePositionAdjustment =
           UIOffset(horizontal: 0, vertical: offset)
+        for state in [
+          itemAppearance.normal,
+          itemAppearance.selected,
+          itemAppearance.disabled,
+          itemAppearance.focused,
+        ] {
+          var attributes = state.titleTextAttributes
+          // UIKit's iOS 26 Liquid Glass provider normalizes titlePositionAdjustment
+          // after layout. A baseline attribute remains part of the title glyph
+          // itself, so it provides the same visual correction without moving the
+          // glass lens or changing the tab button's hit target.
+          attributes[.baselineOffset] = NSNumber(value: Double(-offset))
+          state.titleTextAttributes = attributes
+        }
       }
       tabBar.standardAppearance = appearance
       if #available(iOS 15.0, *) {
