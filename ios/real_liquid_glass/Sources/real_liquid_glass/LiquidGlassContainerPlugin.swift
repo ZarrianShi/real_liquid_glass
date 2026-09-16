@@ -187,6 +187,7 @@ final class NativeTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDel
       $0.titlePositionAdjustment = UIOffset(horizontal: 0, vertical: offset)
     }
     appliedTextOnlyTitleOffset = offset
+    tabBar.setNeedsLayout()
   }
 
   private func symbol(
