@@ -261,6 +261,25 @@ void main() {
       expect(params['showLabels'], isTrue);
       debugDefaultTargetPlatformOverride = null;
     });
+
+    testWidgets('keeps native text-only titles inside the minimum height', (
+      tester,
+    ) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      await tester.pumpWidget(
+        host(
+          LiquidGlassBottomBar(
+            items: items,
+            currentIndex: 0,
+            onTap: (_) {},
+            showIcons: false,
+            height: 32,
+          ),
+        ),
+      );
+      expect(tester.getSize(find.byType(UiKitView)).height, 49);
+      debugDefaultTargetPlatformOverride = null;
+    });
   });
 
   group('LiquidGlass.capabilities', () {

@@ -98,6 +98,10 @@ class LiquidGlassBottomBar extends StatefulWidget {
   final LiquidGlassStyle style;
 
   /// Bar height, excluding [margin].
+  ///
+  /// On iOS, text-only bars use UIKit's 49pt minimum content height when a
+  /// smaller value is requested, so native titles are never clipped by the
+  /// system tab-bar layout.
   final double height;
 
   /// Spacing around the floating bar. The default keeps it clear of the
@@ -115,6 +119,7 @@ class LiquidGlassBottomBar extends StatefulWidget {
   final double fallbackIntensity;
 
   static const double _capsulePadding = 4;
+  static const double _nativeTextOnlyMinHeight = 49;
   static const Color _pillLight = Color(0x14000000);
   static const Color _pillDark = Color(0x2EFFFFFF);
 
@@ -175,10 +180,16 @@ class _LiquidGlassBottomBarState extends State<LiquidGlassBottomBar> {
   @override
   Widget build(BuildContext context) {
     if (defaultTargetPlatform == TargetPlatform.iOS) {
+      final nativeHeight = widget.showIcons
+          ? widget.height
+          : math.max(
+              widget.height,
+              LiquidGlassBottomBar._nativeTextOnlyMinHeight,
+            );
       return Padding(
         padding: widget.margin,
         child: SizedBox(
-          height: widget.height,
+          height: nativeHeight,
           child: _NativeLiquidGlassTabBar(
             items: widget.items,
             currentIndex: widget.currentIndex,
