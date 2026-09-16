@@ -186,6 +186,22 @@ final class NativeTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDel
     tabBar.items?.forEach {
       $0.titlePositionAdjustment = UIOffset(horizontal: 0, vertical: offset)
     }
+    if #available(iOS 13.0, *) {
+      let appearance = tabBar.standardAppearance ?? UITabBarAppearance()
+      let itemAppearance = appearance.stackedLayoutAppearance
+      itemAppearance.normal.titlePositionAdjustment =
+        UIOffset(horizontal: 0, vertical: offset)
+      itemAppearance.selected.titlePositionAdjustment =
+        UIOffset(horizontal: 0, vertical: offset)
+      itemAppearance.disabled.titlePositionAdjustment =
+        UIOffset(horizontal: 0, vertical: offset)
+      itemAppearance.focused.titlePositionAdjustment =
+        UIOffset(horizontal: 0, vertical: offset)
+      tabBar.standardAppearance = appearance
+      if #available(iOS 15.0, *) {
+        tabBar.scrollEdgeAppearance = appearance
+      }
+    }
     appliedTextOnlyTitleOffset = offset
     tabBar.setNeedsLayout()
   }
