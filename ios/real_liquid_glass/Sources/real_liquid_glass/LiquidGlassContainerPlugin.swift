@@ -182,10 +182,16 @@ final class NativeTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDel
       // UIKit's title-only layout keeps its title near the bottom at the
       // standard 49pt content height. Move it by half of the difference from
       // the actual bar height so the glyph box stays centered in taller and
-      // shorter bars. The baseline nudge is intentionally height-independent:
-      // it corrects the small optical lift of mixed Chinese/Latin glyphs
-      // without changing the centering model for any supported height.
-      titleOffset = 3 - (height - 49) / 2
+      // shorter bars. Below 40pt UIKit starts clipping its standard content
+      // box; ease the offset back toward the compact center so the visible
+      // glyphs do not get pinned to the lower edge.
+      let heightAwareOffset = 3 - (height - 49) / 2
+      let compactCorrection = max(0, (40 - height) / 2)
+      titleOffset = heightAwareOffset - compactCorrection
+
+      // The baseline nudge is intentionally height-independent: it corrects
+      // the small optical lift of mixed Chinese/Latin glyphs without changing
+      // the centering model for any supported height.
       baselineOffset = -1
     }
     if let appliedTextOnlyTitleOffset,
