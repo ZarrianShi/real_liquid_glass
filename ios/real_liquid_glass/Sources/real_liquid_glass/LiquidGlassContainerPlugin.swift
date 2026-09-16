@@ -72,6 +72,13 @@ private final class NativeLiquidGlassTabBar: UITabBar {
 }
 
 final class NativeTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelegate {
+  private enum TextOnlyLayout {
+    static let standardContentHeight: CGFloat = 49
+    static let titleLayoutCompensation: CGFloat = 3
+    static let compactHeightThreshold: CGFloat = 40
+    static let opticalBaselineOffset: CGFloat = -1
+  }
+
   private let container: UIView
   private let tabBar: NativeLiquidGlassTabBar
   private let channel: FlutterMethodChannel
@@ -185,14 +192,17 @@ final class NativeTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDel
       // shorter bars. Below 40pt UIKit starts clipping its standard content
       // box; ease the offset back toward the compact center so the visible
       // glyphs do not get pinned to the lower edge.
-      let heightAwareOffset = 3 - (height - 49) / 2
-      let compactCorrection = max(0, (40 - height) / 2)
+      let heightAwareOffset = TextOnlyLayout.titleLayoutCompensation
+        - (height - TextOnlyLayout.standardContentHeight) / 2
+      let compactCorrection = max(
+        0,
+        (TextOnlyLayout.compactHeightThreshold - height) / 2)
       titleOffset = heightAwareOffset - compactCorrection
 
       // The baseline nudge is intentionally height-independent: it corrects
       // the small optical lift of mixed Chinese/Latin glyphs without changing
       // the centering model for any supported height.
-      baselineOffset = -1
+      baselineOffset = TextOnlyLayout.opticalBaselineOffset
     }
     if let appliedTextOnlyTitleOffset,
        let appliedTextOnlyBaselineOffset,

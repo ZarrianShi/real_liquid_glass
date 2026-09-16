@@ -111,6 +111,10 @@ LiquidGlassBottomBar(
 )
 ```
 
+The native text-only layout follows UIKit's 49pt minimum content height. On
+iOS, a smaller requested height is raised to that minimum so titles remain
+fully visible; larger heights keep their titles vertically centered.
+
 Other platforms keep the Flutter-rendered fallback behind the same API.
 
 ### `LiquidGlass.capabilities()`
