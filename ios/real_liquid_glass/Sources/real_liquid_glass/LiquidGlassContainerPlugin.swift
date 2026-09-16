@@ -80,7 +80,7 @@ final class NativeTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDel
   private var selectedSymbols: [String] = []
   private var showsLabels = true
   private var showsIcons = true
-  private var appliedTextOnlyTitleOffset: CGFloat?
+  private var appliedTextOnlyBaselineOffset: CGFloat?
 
   init(
     frame: CGRect,
@@ -150,7 +150,7 @@ final class NativeTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDel
           image: image,
           selectedImage: selectedImage)
       }
-      appliedTextOnlyTitleOffset = nil
+      appliedTextOnlyBaselineOffset = nil
     }
 
     updateTextOnlyTitlePosition()
@@ -168,23 +168,39 @@ final class NativeTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDel
   }
 
   private func updateTextOnlyTitlePosition() {
-    let offset: CGFloat
+    let baselineOffset: CGFloat
     if showsIcons {
-      offset = 0
+      baselineOffset = 0
     } else {
       let height = tabBar.bounds.height
       guard height > 0 else { return }
-      // UIKit keeps the title baseline near the bottom when a tab bar is
-      // taller than its standard 49pt content height. Move it by half of the
-      // extra space so a text-only title stays optically centered in the lens.
-      offset = 3 - (height - 49) / 2
+
+      // A title-only UITabBar is naturally centered at its standard 49pt
+      // content height. UIKit keeps that content anchor for shorter bars,
+      // which would clip the glyphs toward the bottom. Raise only the part
+      // that falls outside the shorter bar, then apply a small optical nudge
+      // that keeps Chinese and Latin glyphs visually centered at every height.
+      let shortBarCorrection = max(0, (49 - height) / 2)
+      baselineOffset = shortBarCorrection - 1.5
     }
-    if let appliedTextOnlyTitleOffset,
-       abs(appliedTextOnlyTitleOffset - offset) < 0.01 {
+    if let appliedTextOnlyBaselineOffset,
+       abs(appliedTextOnlyBaselineOffset - baselineOffset) < 0.01 {
       return
     }
+
+    // iOS 26's Liquid Glass tab-bar provider normalizes
+    // titlePositionAdjustment during layout. Keep that value neutral and
+    // move only the title glyph baseline; this leaves the glass lens and hit
+    // target untouched. The baseline attribute is supported on iOS 13+.
     tabBar.items?.forEach {
-      $0.titlePositionAdjustment = UIOffset(horizontal: 0, vertical: offset)
+      $0.titlePositionAdjustment = .zero
+      let attributes: [NSAttributedString.Key: Any] = [
+        .baselineOffset: NSNumber(value: Double(baselineOffset)),
+      ]
+      $0.setTitleTextAttributes(attributes, for: .normal)
+      $0.setTitleTextAttributes(attributes, for: .selected)
+      $0.setTitleTextAttributes(attributes, for: .disabled)
+      $0.setTitleTextAttributes(attributes, for: .focused)
     }
     if #available(iOS 13.0, *) {
       let appearance = tabBar.standardAppearance ?? UITabBarAppearance()
@@ -194,14 +210,6 @@ final class NativeTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDel
         appearance.compactInlineLayoutAppearance,
       ]
       for itemAppearance in itemAppearances {
-        itemAppearance.normal.titlePositionAdjustment =
-          UIOffset(horizontal: 0, vertical: offset)
-        itemAppearance.selected.titlePositionAdjustment =
-          UIOffset(horizontal: 0, vertical: offset)
-        itemAppearance.disabled.titlePositionAdjustment =
-          UIOffset(horizontal: 0, vertical: offset)
-        itemAppearance.focused.titlePositionAdjustment =
-          UIOffset(horizontal: 0, vertical: offset)
         for state in [
           itemAppearance.normal,
           itemAppearance.selected,
@@ -209,11 +217,7 @@ final class NativeTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDel
           itemAppearance.focused,
         ] {
           var attributes = state.titleTextAttributes
-          // UIKit's iOS 26 Liquid Glass provider normalizes titlePositionAdjustment
-          // after layout. A baseline attribute remains part of the title glyph
-          // itself, so it provides the same visual correction without moving the
-          // glass lens or changing the tab button's hit target.
-          attributes[.baselineOffset] = NSNumber(value: Double(-offset))
+          attributes[.baselineOffset] = NSNumber(value: Double(baselineOffset))
           state.titleTextAttributes = attributes
         }
       }
@@ -222,7 +226,7 @@ final class NativeTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDel
         tabBar.scrollEdgeAppearance = appearance
       }
     }
-    appliedTextOnlyTitleOffset = offset
+    appliedTextOnlyBaselineOffset = baselineOffset
     tabBar.setNeedsLayout()
   }
 
