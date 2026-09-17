@@ -76,7 +76,7 @@ final class NativeTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDel
     static let standardContentHeight: CGFloat = 49
     static let titleLayoutCompensation: CGFloat = 3
     static let compactHeightThreshold: CGFloat = 40
-    static let opticalBaselineOffset: CGFloat = -0.5
+    static let opticalBaselineOffset: CGFloat = -0.25
   }
 
   private let container: UIView
@@ -136,6 +136,7 @@ final class NativeTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDel
     let nextSelectedSymbols = args["selectedSymbols"] as? [String] ?? selectedSymbols
     let nextShowsLabels = args["showLabels"] as? Bool ?? showsLabels
     let nextShowsIcons = args["showIcons"] as? Bool ?? showsIcons
+    let requestedItemWidth = (args["itemWidth"] as? NSNumber)?.doubleValue ?? 0
     let itemsChanged = nextLabels != labels || nextSymbols != symbols
       || nextSelectedSymbols != selectedSymbols || nextShowsLabels != showsLabels
       || nextShowsIcons != showsIcons
@@ -144,6 +145,18 @@ final class NativeTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDel
     selectedSymbols = nextSelectedSymbols
     showsLabels = nextShowsLabels
     showsIcons = nextShowsIcons
+
+    // UIKit's automatic iPhone layout fills the tab bar and ignores the
+    // container's Flutter width. Use a centered group when callers request a
+    // per-item width so the native Liquid Glass content grows without
+    // scaling its icons or titles.
+    if requestedItemWidth > 0 {
+      tabBar.itemPositioning = .centered
+      tabBar.itemWidth = CGFloat(requestedItemWidth)
+    } else {
+      tabBar.itemPositioning = .automatic
+      tabBar.itemWidth = 0
+    }
 
     if itemsChanged || tabBar.items == nil {
       tabBar.items = labels.indices.map { index in
