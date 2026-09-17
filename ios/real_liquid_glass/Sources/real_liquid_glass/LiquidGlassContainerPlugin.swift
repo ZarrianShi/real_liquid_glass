@@ -76,7 +76,7 @@ final class NativeTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDel
     static let standardContentHeight: CGFloat = 49
     static let titleLayoutCompensation: CGFloat = 3
     static let compactHeightThreshold: CGFloat = 40
-    static let opticalBaselineOffset: CGFloat = -1
+    static let opticalBaselineOffset: CGFloat = -0.5
   }
 
   private let container: UIView
